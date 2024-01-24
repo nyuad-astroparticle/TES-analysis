@@ -22,21 +22,34 @@ from matplotlib.dates import DateFormatter
 
 from readTrc import Trc
 
-class Tes_Analysis:
-    def __init__(self, traces_path):
+class FileNotFoundError(Exception):
+        pass
+
+class Data_Processing:
+    def __init__(self, traces_path, channel = 'C1'):
         
-        self.ch = 'C1'
+        # Oscilloscope channel on which the data was recorded
+        self.ch = channel
         self.trigger = 0.0
         self.set_trigger(traces_path, self.ch)
         
+        # Oscilloscope output that consists of: time, signal, metadata
         self.traces = None
         self.load_traces(traces_path)
 
+        # What a photon pulse should look like
         self.reference_pulses = None
         self.load_reference_pulses()
 
+        # Voltage from reference pulse
         self.REFERENCE_VOLTAGE = None
         self.set_reference_voltage()
+
+        #Filtering for trigger in traces
+        # Indexes of triggered traces  
+        self.the_data_index = None
+        # Triggered traces
+        self.the_data = None
 
 
     def load_traces(self, data_dir):
@@ -128,31 +141,33 @@ class Tes_Analysis:
             return -1.0 * abs(float(number_str))
         except (ValueError, IndexError):
             return None
-        
 
     def find_file_starting_with(self, directory, start_str):
         """
         Finds the first file in the given directory that starts with the specified string.
+        Raises an error if no such file is found.
 
-        Args:
+        Parameters:
         directory (str): The directory to search in.
         start_str (str): The starting string of the file name to find.
 
         Returns:
-        str: The name of the first matching file, or None if no match is found.
+        str: The name of the first matching file.
+
+        Raises:
+        FileNotFoundError: If no file starting with the specified string is found.
         """
         # Check if the directory exists
         if not os.path.isdir(directory):
-            print(f"The directory {directory} does not exist.")
-            return None
+            raise FileNotFoundError(f"The directory {directory} does not exist.")
 
         # Iterate over the files in the directory
         for file in os.listdir(directory):
             if file.startswith(start_str):
                 return file
 
-        # Return None if no file is found
-        return None
+        # Raise an error if no file is found
+        raise FileNotFoundError(f"Channel {start_str} was not found in the given directory.")
     
     def set_trigger(self, directory, channel):
         """
@@ -168,3 +183,40 @@ class Tes_Analysis:
         
         self.trigger = self.extract_number_before_mV(self.find_file_starting_with(directory, channel))/1000
         print('Trigger for channel', self.ch, 'is set to:', self.trigger*1000, 'mV')
+
+    def number_triggered(self):
+        """
+        Select the traces that had nonzero signal (can add ch3 and ch4 in case we need PMT coincidence as well)
+        
+        Args:
+        None: uses trigger and traces
+
+        Returns:
+        None: sets the data
+
+        """
+        mask_ch0            = [np.min(data[1]) < self.trigger for data in self.traces[self.ch]]
+        self.the_data_index = np.where(np.array(mask_ch0))[0]
+        self.the_data       = [self.traces[self.ch][i] for i in self.the_data_index]
+
+        not_triggered = np.unique(mask_ch0,return_counts=True)[1][0]
+        triggered = np.unique(mask_ch0,return_counts=True)[1][1]
+        print('Number of signals triggered:', triggered, '\nNot triggered:', not_triggered)
+
+    def plot_all_triggered(self):
+        """
+        Plots all of the triggered pulses
+
+        Args:
+        None
+
+        Returns:
+        None: simply plots
+        
+        """
+        plt.figure()
+        for i in self.the_data_index:
+            plt.plot(self.traces[self.ch][i][1])
+        plt.ylabel("Voltage")
+        plt.title(f"{self.ch} triggered events")
+        plt.show()
