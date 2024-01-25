@@ -94,7 +94,7 @@ class PCA(Data_Processing):
         
         return (time_under_trig, noize, area,area/std, peakheight, time_at_98_perc, meantime, np.sqrt(np.mean(grad**2)), grad_min, grad_max, np.max(corr))
 
-    def feature_reduction(self, values_of_interest, a_data):
+    def feature_reduction(self, values_of_interest, a_data, order=2, mysize=1/30):
         """
         This function performs Principal component analysis on the selected functions together with feature reduction and signle value decomposition.
 
@@ -107,7 +107,7 @@ class PCA(Data_Processing):
         """
         
         # Get the data for each of the pulses
-        values      = cp.array([values_of_interest(*data[:2],order=2,mysize=1/30) for data in tqdm(a_data)])
+        values      = cp.array([values_of_interest(*data[:2],order=order,mysize=mysize) for data in tqdm(a_data)])
 
         # Center data
         mu          = cp.tile(np.mean(values,axis=0),len(values)).reshape(values.shape)
@@ -241,7 +241,7 @@ class PCA(Data_Processing):
             self.plot_signal(self.the_data[i][1],fig=fig,ax=ax2,order=2,mysize=1/50,lw=1,label=f'{i}')
 
     # Main Function
-    def KMeans_clustering(self, N_CLUSTERS, red = False):
+    def KMeans_clustering(self, N_CLUSTERS, red = False, first_dim = 0, second_dim = 1):
         """
         ----------------------------------------------------------------------------
         
@@ -249,11 +249,12 @@ class PCA(Data_Processing):
         
         if not red:
             if self.X_compressed is None : self.X_compressed = self.feature_reduction(self.values_of_interest, self.the_data)
+            DATA = self.X_compressed[:, [first_dim, second_dim]]
 
         else:
             if self.X_compressed_red is None : self.X_compressed_red = self.secondary_feature_reduction()
+            DATA = self.X_compressed_red[:, [first_dim, second_dim]]
 
-        DATA = self.X_compressed[:, [0, 1]]
         kmeans = self.initialize_kmeans(N_CLUSTERS, DATA)
         fig, ax1, ax2, points, centers, colors = self.plot_clusters(kmeans, DATA)
         
@@ -289,6 +290,10 @@ class PCA(Data_Processing):
         self.reduced = np.concatenate(self.reduced)
 
     def reduce_data(self):
+        """
+        ----------------------------------------------------------------------------
+        
+        """
         if len(self.reduced) == 0: self.reduce_pyper()
         for x in self.reduced:
             self.reduced_the_data.append(self.the_data[x])
@@ -297,6 +302,10 @@ class PCA(Data_Processing):
 
     
     def values_of_interest_red(self, time,data,order=2,mysize=1/50):
+        """
+        ----------------------------------------------------------------------------
+        
+        """
         sos=signal.butter(order,mysize, output='sos')
         butterybiscuits=signal.sosfilt(sos,data)
         
@@ -323,7 +332,7 @@ class PCA(Data_Processing):
         return (peakheight, time_under_trig, time[peak]/meantime ,noize, area/std, time_at_94_perc, np.max(corr))
     
     
-    def secondary_feature_reduction(self):
+    def secondary_feature_reduction(self, order, mysize):
         """
         Does what feature_reduction does but with the reduced data instead
 
@@ -336,15 +345,16 @@ class PCA(Data_Processing):
         """
         if len(self.reduced_the_data) == 0:
             self.reduce_data()
-        self.X_compressed_red = self.feature_reduction(self.values_of_interest_red, self.reduced_the_data)
+        self.X_compressed_red = self.feature_reduction(self.values_of_interest_red, self.reduced_the_data, order=order, mysize = mysize)
+        return self.X_compressed_red
 
     
-    def secondary_KMeans_clustering(self, N_CLUSTERS):
+    def secondary_KMeans_clustering(self, N_CLUSTERS, first_dim, second_dim):
         """
         This function does Kmean on a smaller subset of selected clusters 
 
         """
         self.reduce_data()
-        self.KMeans_clustering(N_CLUSTERS, red=True)
+        self.KMeans_clustering(N_CLUSTERS, red=True, first_dim = first_dim, second_dim = second_dim)
 
     
