@@ -50,6 +50,7 @@ class Data_Processing:
         self.the_data_index = None
         # Triggered traces
         self.the_data = None
+        self.set_the_data()
 
 
     def load_traces(self, data_dir):
@@ -184,7 +185,7 @@ class Data_Processing:
         self.trigger = self.extract_number_before_mV(self.find_file_starting_with(directory, channel))/1000
         print('Trigger for channel', self.ch, 'is set to:', self.trigger*1000, 'mV')
 
-    def number_triggered(self):
+    def set_the_data(self):
         """
         Select the traces that had nonzero signal (can add ch3 and ch4 in case we need PMT coincidence as well)
         

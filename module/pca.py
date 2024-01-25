@@ -31,9 +31,11 @@ class PCA(Data_Processing):
         
         self.N_CLUSTERS = None
         self.X_compressed = None
+        self.DATA = None
+        self.pyper = []
 
 
-    def plot_signal(voltage,fig=None,ax=None,order=2,mysize=1/50,**kwargs):
+    def plot_signal(self, voltage,fig=None,ax=None,order=2,mysize=1/50,**kwargs):
         '''
         Returns a Pyplot figure of the smoothed voltage signal as a function of
         event number
@@ -146,107 +148,114 @@ class PCA(Data_Processing):
 
         plt.show()
 
-
-    def KMeans_clustering(self, N_CLUSTERS):
-
+    ################################### KMeans ###################################
+        
+    # Initialization Function
+    def initialize_kmeans(self, n_clusters):
         """
         ----------------------------------------------------------------------------
+        
         """
-        
-        # argument N_Clusters 
+        kmeans = KMeans(n_clusters=n_clusters, n_init="auto").fit(self.DATA)
+        return kmeans
 
-        # Enable '%matplotlib widget' if running in Jupyter Notebook
-        if 'ipykernel' in sys.modules and 'IPython' in sys.modules:
-            from IPython import get_ipython
-            get_ipython().run_line_magic('matplotlib', 'widget')
-        
-        # PARAMETERS
-        pyper       = []
-
+    # Plotting Function
+    def plot_clusters(self, kmeans):
         sns.set_palette("colorblind")
-        # Get the centers
-        DATA    = self.X_compressed[:,[0,1]]
-
-        kmeans  = KMeans(n_clusters=N_CLUSTERS, n_init="auto").fit(DATA)
-        closestpoints=[]
-
-        fig     = plt.figure(figsize = (14,7))
-        ax1     = fig.add_subplot(121)
-        ax2     = fig.add_subplot(122)
-        # Create a colormap from the Seaborn palette
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 7))
+        
+        # Create a colormap
         colorblind_palette = sns.color_palette("colorblind")
         cmap = ListedColormap(colorblind_palette)
-        COLORS  = np.array([kmeans.predict([x[:2]])[0] for x in DATA])
-        norm    = matplotlib.colors.Normalize(vmin=COLORS.min(),vmax=COLORS.max())
-        points  = ax1.scatter(*(DATA.T),s=10,alpha=0.5,c=cmap(norm(COLORS)))
-        centers = ax1.scatter(*kmeans.cluster_centers_.T,color='k',marker='x',s=50)
+        colors = np.array([kmeans.predict([x[:2]])[0] for x in self.DATA])
+        norm = matplotlib.colors.Normalize(vmin=colors.min(), vmax=colors.max())
+
+        points = ax1.scatter(*self.DATA.T, s=10, alpha=0.5, c=cmap(norm(colors)))
+        centers = ax1.scatter(*kmeans.cluster_centers_.T, color='k', marker='x', s=50)
         ax1.set_title('Clusters')
         ax2.set_xlabel('Time [ms]')
         ax2.set_ylabel('Voltage [V]')
-        IDX_SELECTED  = []
+        
+        return fig, ax1, ax2, points, centers, colors
 
+    # Callback Functions
+    def callback(self, sel, fig, ax2, points, centers, colors, cursor_p, cursor_c):
+        """
+        ----------------------------------------------------------------------------
+        
+        """
+        I = sel.index
+        cursor_p.visible = True
+        cursor_c.visible = False
+        sel.annotation.set_text(sel.index)
+        fig.suptitle(f'Idx {I}')
+        ax2.clear()
+        self.pyper.append(I)
+
+        self.plot_signal(self.the_data[I][1],fig=fig,ax=ax2,order=0,mysize=1/50,color='k',alpha=0.2,lw=0.5)
+        self.plot_signal(self.the_data[I][1],fig=fig,ax=ax2,order=2,mysize=1/50,color='k',lw=1)
+        ax2.plot(self.REFERENCE_VOLTAGE*self.the_data[I][1].min()/self.REFERENCE_VOLTAGE.min(), color='deepskyblue',lw=1,ls=(0,(5,10)))
+        sel.annotation.get_bbox_patch().set(fc="white",lw=0,alpha=0)
+        sel.annotation.arrow_patch.set(arrowstyle="]-", fc="k")
+        CC = ['k']*9
+        CC[colors[I]] = 'deeppink'
+        centers.set_color(CC)
+
+    def callback_center(self, sel, fig, ax2, points, centers, colors, cursor_p, cursor_c):
+        """
+        ----------------------------------------------------------------------------
+        
+        """
+        I = sel.index
+        idx_c = np.where(colors==I)[0]
+        sel.annotation.set_text(len(idx_c))
+        sel.annotation.get_bbox_patch().set(fc="white",lw=0,alpha=0)
+        sel.annotation.arrow_patch.set(arrowstyle="wedge", fc="k")
+        fig.suptitle(f'Center {I}')
+        ax2.clear()
+        cursor_p.visible = False
+        cursor_c.visible = True
+        #pyperclip.copy(", ".join([str(i) for i in idx_c]))
+        #PYPER = eval("[" + ", ".join([str(i) for i in idx_c]) + "]")
+        self.pyper.append(idx_c)
+        print(len([str(i) for i in idx_c]))
+        print((", ".join([str(i) for i in idx_c])))
+        CC = ['k']*9
+        CC[I] = 'cornflowerblue'
+        centers.set_color(CC)
+
+        ax2.set_title(f'Number of Points {len(idx_c)}')
+        for i in idx_c:
+            pass
+            #plot_signal(the_data[I][1],fig=fig,ax=ax2,order=0,mysize=1/50,color='k',alpha=0.2,lw=0.5)
+            self.plot_signal(self.the_data[i][1],fig=fig,ax=ax2,order=2,mysize=1/50,lw=1,label=f'{i}')
+
+    # Main Function
+    def KMeans_clustering(self, N_CLUSTERS):
+        """
+        ----------------------------------------------------------------------------
+        
+        """
+        if self.X_compressed is None : self.feature_reduction()
+        self.DATA = self.X_compressed[:, [0, 1]]
+        kmeans = self.initialize_kmeans(N_CLUSTERS)
+        fig, ax1, ax2, points, centers, colors = self.plot_clusters(kmeans)
+        
         cursor_p = mplcursors.cursor(points)
-
-        def callback(sel):
-            """
-            ----------------------------------------------------------------------------
-            """
-            I = sel.index
-            cursor_p.visible = True
-            cursor_c.visible = False
-            sel.annotation.set_text(sel.index)
-            fig.suptitle(f'Idx {I}')
-            ax2.clear()
-            pyper.append(I)
-
-            self.plot_signal(self.the_data[I][1],fig=fig,ax=ax2,order=0,mysize=1/50,color='k',alpha=0.2,lw=0.5)
-            self.plot_signal(self.the_data[I][1],fig=fig,ax=ax2,order=2,mysize=1/50,color='k',lw=1)
-            ax2.plot(self.REFERENCE_VOLTAGE*self.the_data[I][1].min()/self.REFERENCE_VOLTAGE.min(), color='deepskyblue',lw=1,ls=(0,(5,10)))
-            sel.annotation.get_bbox_patch().set(fc="white",lw=0,alpha=0)
-            sel.annotation.arrow_patch.set(arrowstyle="]-", fc="k")
-            CC = ['k']*9
-            CC[COLORS[I]] = 'deeppink'
-            centers.set_color(CC)
-
-            # val    = values[I]
-            # function_name = ["fwhm", "peakheight/area", "time_at_98_perc", "(meantime-time[peak])/peakheight", "std", "area", "np.sqrt(np.mean(grad**2))", "grad_min", "grad_max", "np.max(corr)"]
-            # max_name_width = max(len(name) for name in function_name)
-            # print("-" * (max_name_width + 30))
-            # print(f"{[I]},{'Name':<{max_name_width}}\tResult")
-            # for i, name in enumerate(function_name):
-            #     result = val[i]
-            #     print(f"{name:<{max_name_width}}\t{result}")
-            
-        cursor_p.connect("add", lambda sel: callback(sel))
-
-
         cursor_c = mplcursors.cursor(centers)
 
-        def callback_center(self, sel):
-            """
-            ----------------------------------------------------------------------------
-            """
-            I = sel.index
-            idx_c = np.where(COLORS==I)[0]
-            sel.annotation.set_text(len(idx_c))
-            sel.annotation.get_bbox_patch().set(fc="white",lw=0,alpha=0)
-            sel.annotation.arrow_patch.set(arrowstyle="wedge", fc="k")
-            fig.suptitle(f'Center {I}')
-            ax2.clear()
-            cursor_p.visible = False
-            cursor_c.visible = True
-            #pyperclip.copy(", ".join([str(i) for i in idx_c]))
-            #PYPER = eval("[" + ", ".join([str(i) for i in idx_c]) + "]")
-            pyper.append(idx_c)
-            print(len([str(i) for i in idx_c]))
-            print((", ".join([str(i) for i in idx_c])))
-            CC = ['k']*9
-            CC[I] = 'cornflowerblue'
-            centers.set_color(CC)
+        cursor_p.connect("add", lambda sel: self.callback(sel, fig, ax2, points, centers, colors, cursor_p, cursor_c))
+        cursor_c.connect('add', lambda sel: self.callback_center(sel, fig, ax2, points, centers, colors, cursor_p, cursor_c))
+    
+    def reset_pyper(self):
+        """
+        This function should be used when you misclick on a cluster center and want to save different ones.
 
-            ax2.set_title(f'Number of Points {len(idx_c)}')
-            for i in idx_c:
-                #plot_signal(the_data[I][1],fig=fig,ax=ax2,order=0,mysize=1/50,color='k',alpha=0.2,lw=0.5)
-                self.plot_signal(self.the_data[i][1],fig=fig,ax=ax2,order=2,mysize=1/50,lw=1,label=f'{i}')
-            
-        cursor_c.connect('add', lambda sel:callback_center(sel))
+        Args: 
+        None
+
+        Returns:
+        None
+
+        """
+        self.pyper = []
