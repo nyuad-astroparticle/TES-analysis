@@ -200,8 +200,18 @@ class Data_Processing:
         self.the_data_index = np.where(np.array(mask_ch0))[0]
         self.the_data       = [self.traces[self.ch][i] for i in self.the_data_index]
 
-        not_triggered = np.unique(mask_ch0,return_counts=True)[1][0]
-        triggered = np.unique(mask_ch0,return_counts=True)[1][1]
+        passed = np.unique(mask_ch0,return_counts=True) # how many signal passed the trigger (True)
+        not_triggered = 0
+        triggered = 0
+ 
+        if len(passed[0]) == 1:
+            if passed[0][0]: triggered = passed[1][0]
+            else: not_triggered = passed[1][0]
+
+        else:
+            not_triggered = np.unique(mask_ch0,return_counts=True)[1][0]
+            triggered = np.unique(mask_ch0,return_counts=True)[1][1]
+            
         print('Number of signals triggered:', triggered, '\nNot triggered:', not_triggered)
 
     def plot_all_triggered(self):
