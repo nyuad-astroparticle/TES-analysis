@@ -182,7 +182,7 @@ class Data_Processing:
         None: Sets the trigger
         """
         
-        self.trigger = self.extract_number_before_mV(self.find_file_starting_with(directory, channel))/1000
+        self.trigger = (self.extract_number_before_mV(self.find_file_starting_with(directory, channel)) + 1.0)/1000
         print('Trigger for channel', self.ch, 'is set to:', self.trigger*1000, 'mV')
 
     def set_the_data(self):

@@ -189,7 +189,7 @@ class PCA(Data_Processing):
         return fig, ax1, ax2, points, centers, colors
 
     # Callback Functions
-    def callback(self, sel, fig, ax2, points, centers, colors, cursor_p, cursor_c, N_CLUSTERS):
+    def callback(self, sel, fig, ax2, points, centers, colors, cursor_p, cursor_c, N_CLUSTERS, a_data):
         """
         ----------------------------------------------------------------------------
         
@@ -202,8 +202,8 @@ class PCA(Data_Processing):
         ax2.clear()
         self.pyper.append(I)
 
-        self.plot_signal(self.the_data[I][1],fig=fig,ax=ax2,order=0,mysize=1/50,color='k',alpha=0.2,lw=0.5)
-        self.plot_signal(self.the_data[I][1],fig=fig,ax=ax2,order=2,mysize=1/50,color='k',lw=1)
+        self.plot_signal(a_data[I][1],fig=fig,ax=ax2,order=0,mysize=1/50,color='k',alpha=0.2,lw=0.5)
+        self.plot_signal(a_data[I][1],fig=fig,ax=ax2,order=2,mysize=1/50,color='k',lw=1)
         ax2.plot(self.REFERENCE_VOLTAGE*self.the_data[I][1].min()/self.REFERENCE_VOLTAGE.min(), color='deepskyblue',lw=1,ls=(0,(5,10)))
         sel.annotation.get_bbox_patch().set(fc="white",lw=0,alpha=0)
         sel.annotation.arrow_patch.set(arrowstyle="]-", fc="k")
@@ -211,7 +211,7 @@ class PCA(Data_Processing):
         CC[colors[I]] = 'deeppink'
         centers.set_color(CC)
 
-    def callback_center(self, sel, fig, ax2, points, centers, colors, cursor_p, cursor_c, N_CLUSTERS):
+    def callback_center(self, sel, fig, ax2, points, centers, colors, cursor_p, cursor_c, N_CLUSTERS, a_data):
         """
         ----------------------------------------------------------------------------
         
@@ -238,7 +238,7 @@ class PCA(Data_Processing):
         for i in idx_c:
             pass
             #plot_signal(the_data[I][1],fig=fig,ax=ax2,order=0,mysize=1/50,color='k',alpha=0.2,lw=0.5)
-            self.plot_signal(self.the_data[i][1],fig=fig,ax=ax2,order=2,mysize=1/50,lw=1,label=f'{i}')
+            self.plot_signal(a_data[i][1],fig=fig,ax=ax2,order=2,mysize=1/50,lw=1,label=f'{i}')
 
     # Main Function
     def KMeans_clustering(self, N_CLUSTERS, red = False, first_dim = 0, second_dim = 1):
@@ -246,14 +246,20 @@ class PCA(Data_Processing):
         ----------------------------------------------------------------------------
         
         """
+
+        self.reset_pyper()
         
         if not red:
+            self.reduced_the_data = []
             if self.X_compressed is None : self.X_compressed = self.feature_reduction(self.values_of_interest, self.the_data)
             DATA = self.X_compressed[:, [first_dim, second_dim]]
+            a_data = self.the_data
 
         else:
-            if self.X_compressed_red is None : self.X_compressed_red = self.secondary_feature_reduction()
+            if self.X_compressed_red is None : self.secondary_feature_reduction()
             DATA = self.X_compressed_red[:, [first_dim, second_dim]]
+            a_data = self.reduced_the_data
+        # print(DATA)
 
         kmeans = self.initialize_kmeans(N_CLUSTERS, DATA)
         fig, ax1, ax2, points, centers, colors = self.plot_clusters(kmeans, DATA)
@@ -261,8 +267,8 @@ class PCA(Data_Processing):
         cursor_p = mplcursors.cursor(points)
         cursor_c = mplcursors.cursor(centers)
 
-        cursor_p.connect("add", lambda sel: self.callback(sel, fig, ax2, points, centers, colors, cursor_p, cursor_c, N_CLUSTERS))
-        cursor_c.connect('add', lambda sel: self.callback_center(sel, fig, ax2, points, centers, colors, cursor_p, cursor_c,N_CLUSTERS))
+        cursor_p.connect("add", lambda sel: self.callback(sel, fig, ax2, points, centers, colors, cursor_p, cursor_c, N_CLUSTERS, a_data))
+        cursor_c.connect('add', lambda sel: self.callback_center(sel, fig, ax2, points, centers, colors, cursor_p, cursor_c,N_CLUSTERS, a_data))
     
     def reset_pyper(self):
         """
@@ -280,23 +286,53 @@ class PCA(Data_Processing):
 
     ############################## Secondary KMeans ###################################
         
-    def reduce_pyper(self):
+    def reduce_pyper(self, to_print = False):
         """
         This function selects points from kmeans plot clicking, on which we want to run secondary pca. 
         
         """
 
-        self.reduced.append(self.pyper[1])
-        self.reduced = np.concatenate(self.reduced)
+        if len(self.pyper) == 0: return
+        
+        self.reduced = np.array([])
+
+        for i, x in enumerate(self.pyper):
+            
+            # If x is a list, add it to reduced and continue to the next iteration.
+            if isinstance(x, np.ndarray):
+                self.reduced = np.hstack((self.reduced, np.array(x)))
+                if to_print: print('added a list')
+                continue
+
+            # For a point, we check if it's the last element
+            if i == len(self.pyper) - 1:
+                self.reduced = np.append(self.reduced, x)
+                if to_print: print('added the last point')
+                continue
+
+            
+            if isinstance(self.pyper[i + 1], np.ndarray):
+                if to_print: print('did not add a number')
+                continue
+
+            # If not the last element and the next element is not a list, append x to reduced.
+            self.reduced = np.append(self.reduced, x)
+            if to_print: print('added a point')
+
+
+        # self.reduced.append(self.pyper[1])
+        # self.reduced = np.concatenate(self.reduced)
 
     def reduce_data(self):
         """
         ----------------------------------------------------------------------------
         
         """
-        if len(self.reduced) == 0: self.reduce_pyper()
+        self.reduce_pyper()
+        # print(len(self.reduced_the_data))
         for x in self.reduced:
-            self.reduced_the_data.append(self.the_data[x])
+            self.reduced_the_data.append(self.the_data[int(x)])
+        # print(len(self.reduced_the_data))
         
 
 
@@ -343,10 +379,13 @@ class PCA(Data_Processing):
         None
 
         """
+        # check if data has been reduced. if not does reduction.
         if len(self.reduced_the_data) == 0:
             self.reduce_data()
+
+        
         self.X_compressed_red = self.feature_reduction(self.values_of_interest_red, self.reduced_the_data, order=order, mysize = mysize)
-        return self.X_compressed_red
+        # return self.X_compressed_red
 
     
     def secondary_KMeans_clustering(self, N_CLUSTERS, first_dim, second_dim):
@@ -354,7 +393,6 @@ class PCA(Data_Processing):
         This function does Kmean on a smaller subset of selected clusters 
 
         """
-        self.reduce_data()
         self.KMeans_clustering(N_CLUSTERS, red=True, first_dim = first_dim, second_dim = second_dim)
 
     
