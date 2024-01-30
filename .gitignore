@@ -9,3 +9,4 @@
 module/tes/__pycache__
 !module/setup
 !module/README.md
+!PCA_plot_working.ipynb
