@@ -1,9 +1,9 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 setup(
     name='tes',
-    version='0.1',
-    packages=find_packages(),
+    version='0.1.0',
+    packages=['tes'],
     description='A package for performing PCA + KMeans on TES data',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',

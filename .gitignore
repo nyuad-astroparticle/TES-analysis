@@ -4,4 +4,7 @@
 !condaisaac.yml
 !new_calibration.ipynb
 !module
-!module/*
+!module/tes/
+!module/tes/*
+!module/setup
+!module/README.md
