@@ -85,9 +85,25 @@ class Data_Processing:
         else:
             print(f"No data found for channel {ch}")
 
+    def get_csv_path(self, filename):
+        """
+        Provides a path for loading references. Need when used as a module.
+
+        Args:
+        filename (str): name of the file (currently used only for reference.dat)
+
+        Returns:
+        csv_path (str): full path to the file
+
+        """
+        # Get the directory of the current module
+        module_dir = os.path.dirname(__file__)
+        # Construct the full path to the CSV
+        csv_path = os.path.join(module_dir, filename)
+        return csv_path
+
     def load_reference_pulses(self):
         """
-
         Loads reference pulses from a specified file.
 
         Args:
@@ -95,9 +111,10 @@ class Data_Processing:
 
         Returns:
         None: The method updates the `reference_pulses` attribute of the class.
+
         """
         try:
-            self.reference_pulses = pd.read_csv("./reference.dat", skiprows=5, header=[0, 1], sep='\t')
+            self.reference_pulses = pd.read_csv(self.get_csv_path("./reference.dat"), skiprows=5, header=[0, 1], sep='\t')
             print("Reference pulses loaded successfully.")
         except Exception as e:
             print(f"An error occurred while loading reference pulses: {e}")
@@ -148,7 +165,7 @@ class Data_Processing:
         Finds the first file in the given directory that starts with the specified string.
         Raises an error if no such file is found.
 
-        Parameters:
+        Args:
         directory (str): The directory to search in.
         start_str (str): The starting string of the file name to find.
 

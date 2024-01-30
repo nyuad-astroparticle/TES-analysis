@@ -22,7 +22,7 @@ from sklearn import manifold
 from matplotlib.dates import DateFormatter
 
 
-from module.module.data_processing import Data_Processing
+from .data_processing import Data_Processing
 
 class PCA(Data_Processing):
 
