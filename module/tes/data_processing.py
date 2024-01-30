@@ -114,7 +114,7 @@ class Data_Processing:
 
         """
         try:
-            self.reference_pulses = pd.read_csv(self.get_csv_path("./reference.dat"), skiprows=5, header=[0, 1], sep='\t')
+            self.reference_pulses = pd.read_csv(self.get_csv_path("reference.dat"), skiprows=5, header=[0, 1], sep='\t')
             print("Reference pulses loaded successfully.")
         except Exception as e:
             print(f"An error occurred while loading reference pulses: {e}")
