@@ -1,0 +1,43 @@
+Run 1: 
+
+    The first run was a background test intended to measure the photon-like DCR. Additionally, in the same run, we measured the high-energy DCR, which we 
+    hypothesized to be caused by cosmic rays or natural radioactive decays interacting with the TES substrate.
+
+    Run1.1 and Run1.2 are part of Run1 conducted on two different days. 
+
+Run 2:
+
+    In Run 2, we utilized a radioactive source, 232Th, to test the response of the TES (Transition Edge Sensor) to high-energy gamma events. 
+    This source was placed against the exterior of the ADR (Adiabatic Demagnetization Refrigerator) and aligned perpendicularly to the TES substrate. 
+    The 232Th source used in this run had an activity measured at approximately 10 kBq.
+
+Run 3:
+
+    In Run 3, a different radioactive source, 22Na, was employed. 
+    This source, with an activity of around 32kBq, was also placed against the exterior of the ADR and aligned perpendicularly to the TES substrate. 
+    The emission spectrum of 22Na is notable for its two prominent photoelectric peaks. 
+    One of these peaks is significant for the simultaneous emission of two back-to-back 511keV photons, resulting from electron-positron annihilation following a β+ decay. 
+    In this setup, the source was sandwiched between the ADR and a plastic scintillator connected to a Photomultiplier Tube (PMT), referred to as a “saber.” 
+    This arrangement allowed for the measurement of double coincidences of the back-to-back gamma rays, capturing these events with both the saber and the TES.
+
+
+Run 4:
+
+    Run 4 was designed as part of a series of tests to demonstrate that cosmic rays can induce high-energy events in the TES (Transition Edge Sensor). 
+    This test involved the implementation of a cosmic ray coincidence system. The setup included three sabers, which are specialized sensors, placed side-by-side directly below 
+    the ADR (Adiabatic Demagnetization Refrigerator). These sabers were operated at a consistent gain with a 10% uncertainty margin and had their thresholds set at 120 mV, equivalent to 250 keV. 
+    The specific calibration details of these sabers can be found in the appendix. The overarching goal of Run 4 was to explore and quantify the interactions between cosmic rays and the TES, 
+    using two distinct data acquisition modes, Run 4A and Run 4B.
+
+    Run 4A:
+
+        In Run 4A, lasting about 19 hours, the focus was on recording instances of simultaneous triggering between the TES and all three sabers, indicative of cosmic ray showers 
+        or muon bundle events. The data acquisition system was set up such that the oscilloscope triggered on the combined (AND) signal of the three sabers, while also capturing the TES signal. 
+        This configuration was primarily aimed at determining the ratio of quadruple coincidences (events registered by both the TES and all three sabers) to triple coincidences 
+        (events detected only by the sabers).
+
+    Run 4B:
+        Run 4B, with a duration of approximately 14 hours, differed in its triggering mechanism. Here, the trigger was set on the TES for signals exceeding 0.8 eV. 
+        During this run, the system also recorded the outputs from all three sabers. The primary purpose of Run 4B was to estimate the ratio of quadruple coincidences 
+        (events detected by the TES and the three sabers) to the total number of high-energy events observed by the TES. This mode was essential for understanding the proportion 
+        of cosmic ray-induced events relative to the total high-energy events detected by the TES.

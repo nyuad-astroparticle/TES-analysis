@@ -1,12 +1,5 @@
-*
-!.gitignore
-!one_script_to_rule_them_all.ipynb
-!new_calibration.ipynb
-!module
-!module/tes/
-!module/tes/*
 module/tes/__pycache__
-!module/setup
-!module/README.md
-!PCA_plot_working.ipynb
-!environment.yml
+__pycache__
+module/build
+module/tes.egg-info
+test.ipynb
