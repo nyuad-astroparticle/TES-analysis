@@ -3,3 +3,4 @@ __pycache__
 module/build
 module/tes.egg-info
 test.ipynb
+module/data
