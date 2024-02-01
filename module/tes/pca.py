@@ -45,7 +45,6 @@ class PCA(Data_Processing):
 
         Args:
         voltage (arr): voltage of a signal from the data
-        ----------------------------------------------------------------------------Artem needs to elaborate on the arguments here
 
         Returns:
         fig,ax
@@ -55,6 +54,7 @@ class PCA(Data_Processing):
         sos=signal.butter(order,mysize, output='sos')
         butterybiscuits=signal.sosfilt(sos,voltage)
         
+        # When K-means plot is first made the subplot for the signal is initially undefined since no signal is selected to be plotted
         if fig is None: fig = plt.figure()
         if ax is None: ax  = fig.add_subplot(111)
         
@@ -65,34 +65,57 @@ class PCA(Data_Processing):
     def values_of_interest(self,time,data,order,mysize):
         """
         These are functions used as dimentions in the PCA
-
-        ----------------------------------------------------------------------------Artem please write the description of the function, args, and return
+        
+        Args:
+        data (check the_data from data_processing)
+        time (arr): time of a signal from the data
+        Returns:
+        Arbitraty combination of the functions defined below
 
         """
         sos=signal.butter(order,mysize, output='sos')
         butterybiscuits=signal.sosfilt(sos,data)
         
-        peak            = np.argmin(butterybiscuits)
-        area            = np.sum(butterybiscuits[:-1]*(time[1:]-time[:-1]))
+        # Finds maximum voltage amplitude value after applied smoothing
         peakheight      = np.min(butterybiscuits)
+        # Finds index of the peakheight point
+        peak            = np.argmin(butterybiscuits)
+        # Calculates total area of the smoothed pulse 
+        area            = np.sum(butterybiscuits[:-1]*(time[1:]-time[:-1]))
+        # Finds time points where the signal amplitude is smaller than peakheight
         halfheights     = np.where(butterybiscuits-peakheight/2<0)[0]
+        # Calculates full width at a half maxima (time)
         fwhm            = 0 if len(halfheights)<1 else time[halfheights[-1]]-time[halfheights[0]]
+        # Noise signals usually have a lot of positive voltage values across the signal, this function checks how many points are above arbitrarily small positivce value (important that this function uses raw signal rather than smoothed to preserve fluctuations)
         noize           = len([x for x in data if x>0.00005])
+        # Calculates median voltage of the signal after applied smoothing
         medheight       = np.median(butterybiscuits)
+        # Calculates mean voltage of the signal after applied smoothing
         meanheight      = np.mean(butterybiscuits)
+        # Calculates mean time of the signal after applied smoothing
         meantime        = np.mean(np.abs(butterybiscuits)*(time))/np.sum(np.abs(butterybiscuits[:-1])*(time[1:]-time[:-1]))
+        # Calculates standard deviation of the signal after applied smoothing
         std             = np.std(butterybiscuits)
+        # Calculates a gradient (derivative) of the signal after applied smoothing
         grad            = (butterybiscuits[1:]-butterybiscuits[:-1])/(time[1:]-time[:-1])
+        # Finds mean value of the negative gradient
         grad_min        = np.mean(grad[np.where(grad<0)])
+        # Finds mean value of the positive gradient
         grad_max        = np.mean(grad[np.where(grad>0)])
+        # Correlates the signal with the scaled photon-like reference signal
         corr            = signal.correlate(butterybiscuits/np.min(butterybiscuits)*np.min(self.REFERENCE_VOLTAGE),self.REFERENCE_VOLTAGE)
+        # Calculates cumulative area up to every point of the smoothed signal (arr)
         area_cumulative = np.cumsum(butterybiscuits[:-1]*(time[1:]-time[:-1]))
+        # Calculates cumulative area as a percentage of total area
         cumt_percentage = area_cumulative/area
+        # Define the suitable percentage of the area that can separate the signals the most
         percentage      = 0.97
-        time_at_98_perc = time[np.argmax(cumt_percentage >= percentage)]
-        time_under_trig = len([x for x in butterybiscuits if x >= -0.033])
-        
-        return (time_under_trig, noize, area,area/std, peakheight, time_at_98_perc, meantime, np.sqrt(np.mean(grad**2)), grad_min, grad_max, np.max(corr))
+        # Finds the time stamp of the point where the cumulative area reaches defined percentage of total area
+        time_at_perc = time[np.argmax(cumt_percentage >= percentage)]
+        # Measures how many points are exceeding the trigger value
+        time_under_trig = len([x for x in butterybiscuits if x >= self.trigger])
+        # Returns arbitrary composite functions to further improve separation in feature reduction
+        return (time_under_trig, noize, area,area/std, peakheight, time_at_perc, meantime, np.sqrt(np.mean(grad**2)), grad_min, grad_max, np.max(corr))
 
     def feature_reduction(self, values_of_interest, a_data, order=2, mysize=1/30):
         """
@@ -158,7 +181,13 @@ class PCA(Data_Processing):
     # Initialization Function
     def initialize_kmeans(self, n_clusters, DATA):
         """
-        ----------------------------------------------------------------------------
+        Creates n given clusters based on the data after feature reduction
+        
+        args:
+        n_clusters (int): number of clusters
+        
+        returns:
+        kmeans: parameters for clustering
         
         """
         kmeans = KMeans(n_clusters=n_clusters, n_init="auto").fit(DATA)
@@ -167,7 +196,7 @@ class PCA(Data_Processing):
     # Plotting Function
     def plot_clusters(self, kmeans, DATA):
         """
-        ----------------------------------------------------------------------------
+        Plot the data points after PCA with associated cluster centers and colors
         
         """
         sns.set_palette("colorblind")
@@ -191,7 +220,7 @@ class PCA(Data_Processing):
     # Callback Functions
     def callback(self, sel, fig, ax2, points, centers, colors, cursor_p, cursor_c, N_CLUSTERS, a_data):
         """
-        ----------------------------------------------------------------------------
+        Selects data point that you click on
         
         """
         I = sel.index
@@ -213,7 +242,7 @@ class PCA(Data_Processing):
 
     def callback_center(self, sel, fig, ax2, points, centers, colors, cursor_p, cursor_c, N_CLUSTERS, a_data):
         """
-        ----------------------------------------------------------------------------
+        Selects cluster center that you click on
         
         """
         I = sel.index
@@ -243,7 +272,13 @@ class PCA(Data_Processing):
     # Main Function
     def KMeans_clustering(self, N_CLUSTERS, red = False, first_dim = 0, second_dim = 1):
         """
-        ----------------------------------------------------------------------------
+        This function uses K-means algorithm from sklearn library, which finds optimal cluster separation and assigns every data point its associated cluster center
+        
+        Args:
+        N_CLUSTERS (int): number of clusters needed 
+        red (bool): required for secondary kmeans to work with reduced data
+        first_dim: select dimention of interest (x)
+        second_dim: select dimention of interest (y)
         
         """
 
@@ -325,7 +360,13 @@ class PCA(Data_Processing):
 
     def reduce_data(self):
         """
-        ----------------------------------------------------------------------------
+        Append data from the_data with selected indexes from pyper
+        
+        Args:
+        None
+        
+        Returns:
+        None
         
         """
         self.reduce_pyper()
@@ -339,8 +380,14 @@ class PCA(Data_Processing):
     
     def values_of_interest_red(self, time,data,order=2,mysize=1/50):
         """
-        ----------------------------------------------------------------------------
+        These are functions used as dimentions in the secondary PCA (almost exactly the same as in values_of_interest)
         
+        Args:
+        data (check the_data from data_processing, but from reduced_the_data)
+        time (arr): time of a signal from the data
+        Returns:
+        Arbitraty combination of the functions defined below
+
         """
         sos=signal.butter(order,mysize, output='sos')
         butterybiscuits=signal.sosfilt(sos,data)
@@ -373,7 +420,7 @@ class PCA(Data_Processing):
         Does what feature_reduction does but with the reduced data instead
 
         Args:
-        None
+        None 
 
         Return:
         None
