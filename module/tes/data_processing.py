@@ -7,7 +7,6 @@ import pandas as pd
 import mplcursors
 import pyperclip
 import datetime
-import cupy as cp
 import seaborn as sns
 
 from matplotlib.patches import ConnectionPatch
