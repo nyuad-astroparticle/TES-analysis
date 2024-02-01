@@ -45,7 +45,6 @@ class PCA(Data_Processing):
 
         Args:
         voltage (arr): voltage of a signal from the data
-        ----------------------------------------------------------------------------Artem needs to elaborate on the arguments here
 
         Returns:
         fig,ax
@@ -55,6 +54,7 @@ class PCA(Data_Processing):
         sos=signal.butter(order,mysize, output='sos')
         butterybiscuits=signal.sosfilt(sos,voltage)
         
+        # When K-means plot is first made the subplot for the signal is initially undefined since no signal is selected to be plotted
         if fig is None: fig = plt.figure()
         if ax is None: ax  = fig.add_subplot(111)
         
@@ -65,34 +65,57 @@ class PCA(Data_Processing):
     def values_of_interest(self,time,data,order,mysize):
         """
         These are functions used as dimentions in the PCA
-
-        ----------------------------------------------------------------------------Artem please write the description of the function, args, and return
+        
+        Args:
+        voltage (arr): voltage of a signal from the data
+        time (arr): time of a signal from the data
+        Returns:
+        Arbitraty combination of the functions defined below
 
         """
         sos=signal.butter(order,mysize, output='sos')
         butterybiscuits=signal.sosfilt(sos,data)
         
-        peak            = np.argmin(butterybiscuits)
-        area            = np.sum(butterybiscuits[:-1]*(time[1:]-time[:-1]))
+        # Finds maximum voltage amplitude value after applied smoothing
         peakheight      = np.min(butterybiscuits)
+        # Finds index of the peakheight point
+        peak            = np.argmin(butterybiscuits)
+        # Calculates total area of the smoothed pulse 
+        area            = np.sum(butterybiscuits[:-1]*(time[1:]-time[:-1]))
+        # Finds time points where the signal amplitude is smaller than peakheight
         halfheights     = np.where(butterybiscuits-peakheight/2<0)[0]
+        # Calculates full width at a half maxima (time)
         fwhm            = 0 if len(halfheights)<1 else time[halfheights[-1]]-time[halfheights[0]]
+        # Noise signals usually have a lot of positive voltage values across the signal, this function checks how many points are above arbitrarily small positivce value (important that this function uses raw signal rather than smoothed to preserve fluctuations)
         noize           = len([x for x in data if x>0.00005])
+        # Calculates median voltage of the signal after applied smoothing
         medheight       = np.median(butterybiscuits)
+        # Calculates mean voltage of the signal after applied smoothing
         meanheight      = np.mean(butterybiscuits)
+        # Calculates mean time of the signal after applied smoothing
         meantime        = np.mean(np.abs(butterybiscuits)*(time))/np.sum(np.abs(butterybiscuits[:-1])*(time[1:]-time[:-1]))
+        # Calculates standard deviation of the signal after applied smoothing
         std             = np.std(butterybiscuits)
+        # Calculates a gradient (derivative) of the signal after applied smoothing
         grad            = (butterybiscuits[1:]-butterybiscuits[:-1])/(time[1:]-time[:-1])
+        # Finds mean value of the negative gradient
         grad_min        = np.mean(grad[np.where(grad<0)])
+        # Finds mean value of the positive gradient
         grad_max        = np.mean(grad[np.where(grad>0)])
+        # Correlates the signal with the scaled photon-like reference signal
         corr            = signal.correlate(butterybiscuits/np.min(butterybiscuits)*np.min(self.REFERENCE_VOLTAGE),self.REFERENCE_VOLTAGE)
+        # Calculates cumulative area up to every point of the smoothed signal (arr)
         area_cumulative = np.cumsum(butterybiscuits[:-1]*(time[1:]-time[:-1]))
+        # Calculates cumulative area as a percentage of total area
         cumt_percentage = area_cumulative/area
+        # Define the suitable percentage of the area that can separate the signals the most
         percentage      = 0.97
-        time_at_98_perc = time[np.argmax(cumt_percentage >= percentage)]
-        time_under_trig = len([x for x in butterybiscuits if x >= -0.033])
-        
-        return (time_under_trig, noize, area,area/std, peakheight, time_at_98_perc, meantime, np.sqrt(np.mean(grad**2)), grad_min, grad_max, np.max(corr))
+        # Finds the time stamp of the point where the cumulative area reaches defined percentage of total area
+        time_at_perc = time[np.argmax(cumt_percentage >= percentage)]
+        # Measures how many points are exceeding the trigger value
+        time_under_trig = len([x for x in butterybiscuits if x >= self.trigger])
+        # Returns arbitrary composite functions to further improve separation in feature reduction
+        return (time_under_trig, noize, area,area/std, peakheight, time_at_perc, meantime, np.sqrt(np.mean(grad**2)), grad_min, grad_max, np.max(corr))
 
     def feature_reduction(self, values_of_interest, a_data, order=2, mysize=1/30):
         """
