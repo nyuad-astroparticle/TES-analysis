@@ -210,7 +210,7 @@ class Data_Processing:
         None: uses trigger and traces
 
         Returns:
-        None: sets the data
+        None: sets the data (2d-array [times][voltages])
 
         """
         mask_ch0            = [np.min(data[1]) < self.trigger for data in self.traces[self.ch]]

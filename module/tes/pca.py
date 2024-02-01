@@ -67,7 +67,7 @@ class PCA(Data_Processing):
         These are functions used as dimentions in the PCA
         
         Args:
-        voltage (arr): voltage of a signal from the data
+        data (check the_data from data_processing)
         time (arr): time of a signal from the data
         Returns:
         Arbitraty combination of the functions defined below
@@ -181,7 +181,13 @@ class PCA(Data_Processing):
     # Initialization Function
     def initialize_kmeans(self, n_clusters, DATA):
         """
-        ----------------------------------------------------------------------------
+        Creates n given clusters based on the data after feature reduction
+        
+        args:
+        n_clusters (int): number of clusters
+        
+        returns:
+        kmeans: parameters for clustering
         
         """
         kmeans = KMeans(n_clusters=n_clusters, n_init="auto").fit(DATA)
@@ -190,7 +196,7 @@ class PCA(Data_Processing):
     # Plotting Function
     def plot_clusters(self, kmeans, DATA):
         """
-        ----------------------------------------------------------------------------
+        Plot the data points after PCA with associated cluster centers and colors
         
         """
         sns.set_palette("colorblind")
@@ -214,7 +220,7 @@ class PCA(Data_Processing):
     # Callback Functions
     def callback(self, sel, fig, ax2, points, centers, colors, cursor_p, cursor_c, N_CLUSTERS, a_data):
         """
-        ----------------------------------------------------------------------------
+        Selects data point that you click on
         
         """
         I = sel.index
@@ -236,7 +242,7 @@ class PCA(Data_Processing):
 
     def callback_center(self, sel, fig, ax2, points, centers, colors, cursor_p, cursor_c, N_CLUSTERS, a_data):
         """
-        ----------------------------------------------------------------------------
+        Selects cluster center that you click on
         
         """
         I = sel.index
@@ -266,7 +272,13 @@ class PCA(Data_Processing):
     # Main Function
     def KMeans_clustering(self, N_CLUSTERS, red = False, first_dim = 0, second_dim = 1):
         """
-        ----------------------------------------------------------------------------
+        This function uses K-means algorithm from sklearn library, which finds optimal cluster separation and assigns every data point its associated cluster center
+        
+        Args:
+        N_CLUSTERS (int): number of clusters needed 
+        red (bool): required for secondary kmeans to work with reduced data
+        first_dim: select dimention of interest (x)
+        second_dim: select dimention of interest (y)
         
         """
 
@@ -348,7 +360,13 @@ class PCA(Data_Processing):
 
     def reduce_data(self):
         """
-        ----------------------------------------------------------------------------
+        Append data from the_data with selected indexes from pyper
+        
+        Args:
+        None
+        
+        Returns:
+        None
         
         """
         self.reduce_pyper()
@@ -362,8 +380,14 @@ class PCA(Data_Processing):
     
     def values_of_interest_red(self, time,data,order=2,mysize=1/50):
         """
-        ----------------------------------------------------------------------------
+        These are functions used as dimentions in the secondary PCA (almost exactly the same as in values_of_interest)
         
+        Args:
+        data (check the_data from data_processing, but from reduced_the_data)
+        time (arr): time of a signal from the data
+        Returns:
+        Arbitraty combination of the functions defined below
+
         """
         sos=signal.butter(order,mysize, output='sos')
         butterybiscuits=signal.sosfilt(sos,data)
@@ -396,7 +420,7 @@ class PCA(Data_Processing):
         Does what feature_reduction does but with the reduced data instead
 
         Args:
-        None
+        None 
 
         Return:
         None
