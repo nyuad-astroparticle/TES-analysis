@@ -21,7 +21,6 @@ setup(
         'notebook==7.0.6',
         'matplotlib==3.7.2',
         'seaborn==0.12.2',
-        'cupy==8.3.0',
         'tqdm==4.65.0',
         'ipympl==0.9.3',
         'mplcursors==0.5.3',

@@ -8,7 +8,6 @@ import pandas as pd
 import mplcursors
 import pyperclip
 import datetime
-import cupy as cp
 import seaborn as sns
 
 from matplotlib.patches import ConnectionPatch
@@ -119,45 +118,43 @@ class PCA(Data_Processing):
 
     def feature_reduction(self, values_of_interest, a_data, order=2, mysize=1/30):
         """
-        This function performs Principal component analysis on the selected functions together with feature reduction and signle value decomposition.
+        This function performs Principal component analysis on the selected functions together with feature reduction and single value decomposition.
 
         Args:
         None: works with the data
 
         Returns:
         None: saves self.X_compressed for future uses
-
         """
         
         # Get the data for each of the pulses
-        values      = cp.array([values_of_interest(*data[:2],order=order,mysize=mysize) for data in tqdm(a_data)])
+        values = np.array([values_of_interest(*data[:2], order=order, mysize=mysize) for data in tqdm(a_data)])
 
         # Center data
-        mu          = cp.tile(np.mean(values,axis=0),len(values)).reshape(values.shape)
-        X_centered  = (values-mu)
-        X_centered  = X_centered / cp.tile(np.max(X_centered,axis=0)-cp.min(X_centered,axis=0),len(X_centered)).reshape(X_centered.shape)
+        mu = np.tile(np.mean(values, axis=0), len(values)).reshape(values.shape)
+        X_centered = (values - mu)
+        X_centered = X_centered / np.tile(np.max(X_centered, axis=0) - np.min(X_centered, axis=0), len(X_centered)).reshape(X_centered.shape)
 
         # Single Value Decomposition
-        u,s,vT      = cp.linalg.svd(X_centered)
+        u, s, vT = np.linalg.svd(X_centered)
 
-        # plot the singlar values for the  D  matrix.
+        # plot the singular values for the D matrix.
         # 1. Calculate the D matrix using s: D is s*s
-        D       = cp.asnumpy(s*s)
-        labels  = range(len(X_centered[0]))
+        D = s * s
+        labels = range(len(X_centered[0]))
 
         # 2. Set the fig size to (15,5)
-        fig     = plt.figure(figsize=(10,5))
-        ax      = fig.add_subplot(111)
+        fig = plt.figure(figsize=(10, 5))
+        ax = fig.add_subplot(111)
 
         # 3. Add the line chart using plt.plot( ?? ,'bo-')
-        ax.plot(labels,D,'bo-')
+        ax.plot(labels, D, 'bo-')
 
-        # 3. Add proper tital, ticks, axis labels
+        # 3. Add proper title, ticks, axis labels
         ax.set_title('Singular Values of Datapoints')
         ax.set_xlabel('Label for Linear Combination of (PCs)')
         ax.set_ylabel('Singular Value')
         ax.set_xticks(labels)
-        # ax.set_yscale('log')
 
         # Obtaining our compressed data representation:
         # 1. Determine at least k singular values that are needed to represent the data set from the fig above
@@ -167,10 +164,10 @@ class PCA(Data_Processing):
         v = vT[k].T
 
         # 3. Calculate the compressed data using np.matmul(), X and stored first k of v^T
-        X_compressed = cp.matmul(X_centered,v).get()
+        X_compressed = np.matmul(X_centered, v)
 
         # 4. Print the compressed value of X
-        #print(v)
+        # print(v)
 
         plt.show()
 
