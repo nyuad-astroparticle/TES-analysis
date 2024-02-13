@@ -23,7 +23,7 @@ jobs:
         conda env update --file environment.yml --name base
     - name: Install Package
       run: |
-        python -m install -e ./module/
+        python -m pip install -e ./module/
     - name: Lint with flake8
       run: |
         conda install flake8
