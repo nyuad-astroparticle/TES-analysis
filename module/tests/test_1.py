@@ -1,10 +1,8 @@
 def test_pca_kmeans_clustering_runs():
-    from tes import PCA
-
-    path = './data/Run1.1/'
-    pca = PCA(path)
-    
     try:
+        from tes import PCA
+        path = './module/tests/data/Run1.1/'
+        pca = PCA(path)
         pca.KMeans_clustering(4)
         executed_without_error = True
     except Exception as e:
