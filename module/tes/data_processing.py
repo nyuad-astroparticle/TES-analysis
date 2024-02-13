@@ -19,7 +19,7 @@ from sklearn.cluster import KMeans
 from sklearn import manifold
 from matplotlib.dates import DateFormatter
 
-from readTrc import Trc
+from .readTrc import Trc
 
 class FileNotFoundError(Exception):
         pass
