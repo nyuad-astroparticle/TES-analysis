@@ -3,9 +3,9 @@ __pycache__
 module/build
 module/tes.egg-info
 test.ipynb
-module/data
 DATA
 Images
 new_calibration copy.ipynb
 one_script_to_rule_them_all copy.ipynb
 pca_clustering_analysis_updated.ipynb
+!module/tests/data
